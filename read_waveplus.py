@@ -29,6 +29,7 @@
 from bluepy.btle import UUID, Peripheral, Scanner, DefaultDelegate
 import sys
 import time
+import datetime
 import struct
 import tableprint
 
@@ -154,6 +155,17 @@ class WavePlus():
             self.periph = None
             self.curr_val_char = None
 
+
+# =====================================
+# Values for colorizing terminal output
+# =====================================
+
+COLOR_WARNING = '\033[93m'
+COLOR_ALERT   = '\033[91m'
+COLOR_OK      = '\033[92m'
+COLOR_END     = '\033[0m'
+
+
 # ===================================
 # Class Sensor and sensor definitions
 # ===================================
@@ -172,6 +184,12 @@ class Sensors():
         self.sensor_version = None
         self.sensor_data    = [None]*NUMBER_OF_SENSORS
         self.sensor_units   = ["%rH", "Bq/m3", "Bq/m3", "degC", "hPa", "ppm", "ppb"]
+        self.sensor_formats = ["{:.1f}", "{:.0f}", "{:.0f}", "{:.2f}", "{:.2f}", "{:.1f}", "{:.1f}"]
+        self.show_colors    = [True, True, True, False, False, True, True]  # if true, show value in color         
+        self.warning_levels = [60, 100, 100, 9999, 9999, 800, 250]
+        self.alert_levels   = [70, 150, 150, 9999, 9999, 1000, 2000]
+        self.lower_warning_levels = [30, 0, 0, 0, 0, 0, 0]
+        self.lower_alert_levels   = [25, 0, 0, 0, 0, 0, 0]
     
     def set(self, rawData):
         self.sensor_version = rawData[0]
@@ -194,11 +212,44 @@ class Sensors():
             radon  = radon_raw
         return radon
 
+    def getOutputs(self):
+        outputs = [''] * (1 + NUMBER_OF_SENSORS)
+
+        # current time
+        outputs[0] = datetime.datetime.now().strftime('%d %H:%M:%S')
+
+        # sensors
+        for i_sensor in range(NUMBER_OF_SENSORS):
+            outputs[i_sensor + 1] = self.getOutputStr(i_sensor)
+        
+        return outputs
+        
+    def getOutputStr(self, sensor_index):
+        markers = self.getOutputColorMarkers(sensor_index)
+        return markers[0] + self.getValueStr(sensor_index) + " " + str(self.getUnit(sensor_index)) + markers[1]
+
+    def getValueStr(self, sensor_index):
+        return self.sensor_formats[sensor_index].format(self.getValue(sensor_index))
+
     def getValue(self, sensor_index):
         return self.sensor_data[sensor_index]
 
     def getUnit(self, sensor_index):
         return self.sensor_units[sensor_index]
+
+    def getOutputColorMarkers(self, sensor_index):
+        if (Mode!='terminal' or not self.show_colors[sensor_index]):
+            return ("", "")
+        
+        sensor_value = self.getValue(sensor_index)
+        
+        if (sensor_value >= self.alert_levels[sensor_index] or sensor_value <= self.lower_alert_levels[sensor_index]):
+            return (COLOR_ALERT, COLOR_END) 
+        if (sensor_value >= self.warning_levels[sensor_index] or sensor_value <= self.lower_warning_levels[sensor_index]):
+            return (COLOR_WARNING, COLOR_END)
+        
+        return (COLOR_OK, COLOR_END)
+
 
 try:
     #---- Initialize ----#
@@ -209,34 +260,31 @@ try:
     
     print "Device serial number: %s" %(SerialNumber)
     
-    header = ['Humidity', 'Radon ST avg', 'Radon LT avg', 'Temperature', 'Pressure', 'CO2 level', 'VOC level']
+    header = ['Date, time', 'Humidity', 'Radon ST avg', 'Radon LT avg', 'Temperature', 'Pressure', 'CO2 level', 'VOC level']
+    COLUMN_WIDTH = 12
     
     if (Mode=='terminal'):
-        print tableprint.header(header, width=12)
+        print tableprint.header(header, width=COLUMN_WIDTH)
     elif (Mode=='pipe'):
         print header
         
     while True:
-        
-        waveplus.connect()
+
+        try:
+            waveplus.connect()
+        except:
+            print "Failed to connect, retry in 10 sec"
+            time.sleep(10)
+            continue
         
         # read values
         sensors = waveplus.read()
-        
-        # extract
-        humidity     = str(sensors.getValue(SENSOR_IDX_HUMIDITY))             + " " + str(sensors.getUnit(SENSOR_IDX_HUMIDITY))
-        radon_st_avg = str(sensors.getValue(SENSOR_IDX_RADON_SHORT_TERM_AVG)) + " " + str(sensors.getUnit(SENSOR_IDX_RADON_SHORT_TERM_AVG))
-        radon_lt_avg = str(sensors.getValue(SENSOR_IDX_RADON_LONG_TERM_AVG))  + " " + str(sensors.getUnit(SENSOR_IDX_RADON_LONG_TERM_AVG))
-        temperature  = str(sensors.getValue(SENSOR_IDX_TEMPERATURE))          + " " + str(sensors.getUnit(SENSOR_IDX_TEMPERATURE))
-        pressure     = str(sensors.getValue(SENSOR_IDX_REL_ATM_PRESSURE))     + " " + str(sensors.getUnit(SENSOR_IDX_REL_ATM_PRESSURE))
-        CO2_lvl      = str(sensors.getValue(SENSOR_IDX_CO2_LVL))              + " " + str(sensors.getUnit(SENSOR_IDX_CO2_LVL))
-        VOC_lvl      = str(sensors.getValue(SENSOR_IDX_VOC_LVL))              + " " + str(sensors.getUnit(SENSOR_IDX_VOC_LVL))
-        
-        # Print data
-        data = [humidity, radon_st_avg, radon_lt_avg, temperature, pressure, CO2_lvl, VOC_lvl]
+
+        # get formatted output
+        data = sensors.getOutputs()
         
         if (Mode=='terminal'):
-            print tableprint.row(data, width=12)
+            print tableprint.row(data, width=COLUMN_WIDTH)
         elif (Mode=='pipe'):
             print data
         
