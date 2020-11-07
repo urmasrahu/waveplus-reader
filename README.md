@@ -194,6 +194,20 @@ Exit the script using ```Ctrl+C```.
 | CO2 level                     | ppm |
 | TVOC level                    | ppb | Total volatile organic compounds level
 
+# Troubleshooting
+
+When running the script you get the error "ImportError: No module named functools_lru_cache", run this:
+
+```
+sudo apt-get install python-matplotlib
+
+```
+Ref: (https://askubuntu.com/questions/1046554/python-matplotlib-importerror-no-module-named-functools-lru-cache)
+
+In case the script fails to connect to the Bluetooth device, you may need to run the script as superuser (using the sudo command).
+
+
+
 # Contribution
 
 Let us know how it went! If you want contribute, you can do so by posting issues or suggest enhancement
