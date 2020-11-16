@@ -258,7 +258,6 @@ try:
     #---- Initialize ----#
     waveplus = WavePlus(SerialNumber)
     ledController = LedController()
-    led = ledController.Interface()
 
     if (Mode=='terminal'):
         print "\nPress ctrl+C to exit program\n"
