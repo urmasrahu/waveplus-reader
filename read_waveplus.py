@@ -32,6 +32,7 @@ import time
 import datetime
 import struct
 import tableprint
+from led_controller import LedController, Colors
 
 # ===============================
 # Script guards for correct usage
@@ -101,9 +102,6 @@ def parseSerialNumber(ManuDataHexStr):
 # ===============================
 
 class WavePlus():
-
-    
-    
     def __init__(self, SerialNumber):
         self.periph        = None
         self.curr_val_char = None
@@ -190,6 +188,7 @@ class Sensors():
         self.alert_levels   = [70, 150, 150, 9999, 9999, 1000, 2000]
         self.lower_warning_levels = [30, 0, 0, 0, 0, 0, 0]
         self.lower_alert_levels   = [25, 0, 0, 0, 0, 0, 0]
+        self.status_colors  = {}
     
     def set(self, rawData):
         self.sensor_version = rawData[0]
@@ -214,6 +213,7 @@ class Sensors():
 
     def getOutputs(self):
         outputs = [''] * (1 + NUMBER_OF_SENSORS)
+        self.status_colors  = {}
 
         # current time
         outputs[0] = datetime.datetime.now().strftime('%d %H:%M:%S')
@@ -222,7 +222,7 @@ class Sensors():
         for i_sensor in range(NUMBER_OF_SENSORS):
             outputs[i_sensor + 1] = self.getOutputStr(i_sensor)
         
-        return outputs
+        return (outputs, self.status_colors)
         
     def getOutputStr(self, sensor_index):
         markers = self.getOutputColorMarkers(sensor_index)
@@ -244,17 +244,21 @@ class Sensors():
         sensor_value = self.getValue(sensor_index)
         
         if (sensor_value >= self.alert_levels[sensor_index] or sensor_value <= self.lower_alert_levels[sensor_index]):
+            self.status_colors[sensor_index] = Colors.Red()
             return (COLOR_ALERT, COLOR_END) 
         if (sensor_value >= self.warning_levels[sensor_index] or sensor_value <= self.lower_warning_levels[sensor_index]):
+            self.status_colors[sensor_index] = Colors.Yellow()
             return (COLOR_WARNING, COLOR_END)
         
+        self.status_colors[sensor_index] = Colors.GreenLow() # less brightness for better distinction from yellow
         return (COLOR_OK, COLOR_END)
 
 
 try:
     #---- Initialize ----#
     waveplus = WavePlus(SerialNumber)
-    
+    ledController = LedController()
+
     if (Mode=='terminal'):
         print "\nPress ctrl+C to exit program\n"
     
@@ -268,29 +272,51 @@ try:
     elif (Mode=='pipe'):
         print header
         
+    MAX_FAILURES = 5
+    failure_count = 0
+    
     while True:
-
+        ledController.OnCommsStart()
+        
         try:
             waveplus.connect()
+            failure_count = 0
         except:
-            print "Failed to connect, retry in 10 sec"
-            time.sleep(10)
-            continue
+            ledController.OnCommsEnd()
+            if failure_count < MAX_FAILURES:
+                failure_count += 1
+                RETRY_TIME = 15
+                print "Failed to connect, retry in %d sec" % (RETRY_TIME)
+                ledController.WaitWithCommsLedErrorBlinking(RETRY_TIME)
+                continue
         
+            print "Too many failures (%d), exiting" % (failure_count)
+            break
+        
+        ledController.OnCommsEnd()
+
         # read values
         sensors = waveplus.read()
 
         # get formatted output
-        data = sensors.getOutputs()
+        data, status_colors = sensors.getOutputs()
         
         if (Mode=='terminal'):
             print tableprint.row(data, width=COLUMN_WIDTH)
         elif (Mode=='pipe'):
             print data
+
+        # show status colors of these sensors
+        colors = [()] * 3
+        colors[0] = status_colors[SENSOR_IDX_HUMIDITY]
+        colors[1] = status_colors[SENSOR_IDX_CO2_LVL]
+        colors[2] = status_colors[SENSOR_IDX_VOC_LVL]
+        ledController.ShowStatusLeds(colors)
         
         waveplus.disconnect()
-        
-        time.sleep(SamplePeriod)
+
+        ledController.WaitWithCommsLedGoodStateBlinking(SamplePeriod)
             
 finally:
+    print "Disconnecting"
     waveplus.disconnect()
