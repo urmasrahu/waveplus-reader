@@ -80,7 +80,7 @@ class LedController:
         while (time.time() - start < timeout):
             self.interface.On(LED_COMMS, Colors.Red())
             time.sleep(0.5)
-            self.interface.On(LED_COMMS, Colors.Red())
+            self.interface.On(LED_COMMS, Colors.Blue())
             time.sleep(0.5)
             self.interface.Off(LED_COMMS)
 
