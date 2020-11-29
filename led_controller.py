@@ -1,10 +1,19 @@
-USE_BLINKT = False
+#!/usr/bin/env python3
+
+import time
+
+HAVE_BLINKY = False
+HAVE_BLINKT = False
+
+try:
+    from multi_blinkt import blinky
+    HAVE_BLINKY = True
+except ImportError:
+    pass    
 
 try:
     from blinkt import set_pixel, set_brightness, show
-    import time
-    USE_BLINKT = True
-    print ("Using Blinkt LED strip to show status")
+    HAVE_BLINKT = True
 except ImportError:
     pass
 
@@ -55,6 +64,18 @@ class LedInterfaceBlinkt:
     def Off(self, led_index):
         set_pixel(led_index, 0, 0, 0)
         show()
+        
+        
+class LedInterfaceBlinky:
+    def __init__(self):
+        self.led = blinky.Blinkt()
+        self.result = ""
+        
+    def On(self, led_index, color):
+        self.result = self.led.On(led_index, color)
+        
+    def Off(self, led_index):
+        self.result = self.led.Off(led_index)
 
 
 # change these if you wish to use other LEDs than the first (leftmost) ones
@@ -64,7 +85,15 @@ LED_STATUS_FIRST = LED_COMMS + 1
 
 class LedController:
     def __init__(self):
-        self.interface = LedInterfaceBlinkt() if USE_BLINKT else LedInterfaceBase();
+        if HAVE_BLINKY:
+            self.interface = LedInterfaceBlinky()
+            print("Using Blinky LED interface")
+        elif HAVE_BLINKT:
+            self.interface = LedInterfaceBlinkt()
+            print("Using Blinkt LED interface")
+        else:
+            self.interface = LedInterfaceBase()
+            print("No LED interface installed")
 
     def Interface(self):
         return self.interface
