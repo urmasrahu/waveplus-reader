@@ -319,4 +319,6 @@ try:
             
 finally:
     print ("Disconnecting")
+    ledController.OnDisconnect()
     waveplus.disconnect()
+    ledController.OnEndProgram()

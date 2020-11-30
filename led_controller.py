@@ -35,8 +35,14 @@ class Colors:
     def GreenLow():
         return (0, 8, 0)
     @staticmethod
+    def GreenHeartbeat():
+        return (0, 8, 0)
+    @staticmethod
     def Blue():
         return (0, 0, 255)
+    @staticmethod
+    def BlueComms():
+        return (0, 0, 64)
     @staticmethod
     def Yellow():
         return (255, 128, 0) # Blinkt's green component is overpowered, reduce it to make it more clearly yellow
@@ -48,8 +54,11 @@ class LedInterfaceBase:
     
     def Off(self, led_index):
         pass
-   
     
+    def Flash(self, led_index, color, milliseconds):
+        pass
+
+
 class LedInterfaceBlinkt:
     def __init__(self):
         set_brightness(0.05)
@@ -64,7 +73,12 @@ class LedInterfaceBlinkt:
     def Off(self, led_index):
         set_pixel(led_index, 0, 0, 0)
         show()
-        
+
+    def Flash(self, led_index, color, milliseconds):
+        self.On(led_index, color)
+        time.sleep(milliseconds * 1000)
+        self.Off(led_index)
+
         
 class LedInterfaceBlinky:
     def __init__(self):
@@ -76,6 +90,9 @@ class LedInterfaceBlinky:
         
     def Off(self, led_index):
         self.result = self.led.Off(led_index)
+        
+    def Flash(self, led_index, color, milliseconds):
+        self.result = self.led.Flash(led_index, color, milliseconds)
 
 
 # change these if you wish to use other LEDs than the first (leftmost) ones
@@ -94,12 +111,14 @@ class LedController:
         else:
             self.interface = LedInterfaceBase()
             print("No LED interface installed")
+            
+        self.highestLedUsed = LED_COMMS
 
     def Interface(self):
         return self.interface
 
     def OnCommsStart(self):
-        self.interface.On(LED_COMMS, Colors.Blue())
+        self.interface.On(LED_COMMS, Colors.BlueComms())
     
     def OnCommsEnd(self):
         self.interface.Off(LED_COMMS)
@@ -116,17 +135,25 @@ class LedController:
     def WaitWithCommsLedGoodStateBlinking(self, timeout):
         start = time.time()
         while (time.time() - start < timeout):
-            self.interface.On(LED_COMMS, Colors.Green())
-            time.sleep(0.1)
-            self.interface.Off(LED_COMMS)
             time.sleep(10)
+            self.interface.Flash(LED_COMMS, Colors.GreenHeartbeat(), 100)
     
     def ShowStatusLeds(self, colors):
         i = LED_STATUS_FIRST
         for color in colors:
             self.interface.On(i, color)
             i += 1
+        if i > self.highestLedUsed:
+            self.highestLedUsed = i
+           
+    def OnDisconnect(self):
+        for i in range (LED_COMMS, self.highestLedUsed):
+            self.interface.On(i, Colors.Red())
     
+    def OnEndProgram(self):
+        self.ClearAll()
+           
     def ClearAll(self):
-        pass
+        for i in range (LED_COMMS, self.highestLedUsed):
+            self.interface.Off(i)
         
