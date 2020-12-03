@@ -48,7 +48,7 @@ class Colors:
         return (255, 128, 0) # Blinkt's green component is overpowered, reduce it to make it more clearly yellow
 
 
-class LedInterfaceBase:
+class LedInterfaceDummy:
     def On(self, led_index, color):
         pass
     
@@ -101,16 +101,16 @@ LED_STATUS_FIRST = LED_COMMS + 1
 
 
 class LedController:
-    def __init__(self):
-        if HAVE_BLINKY:
+    def __init__(self, mode):
+        if HAVE_BLINKY and mode == "blinky":
             self.interface = LedInterfaceBlinky()
-            print("Using Blinky LED interface")
-        elif HAVE_BLINKT:
+            print("Using Blinky LED mode")
+        elif HAVE_BLINKT and mode == "blinkt":
             self.interface = LedInterfaceBlinkt()
-            print("Using Blinkt LED interface")
+            print("Using Blinkt LED mode")
         else:
-            self.interface = LedInterfaceBase()
-            print("No LED interface installed")
+            self.interface = LedInterfaceDummy()
+            print("Not using LED indicators")
             
         self.highestLedUsed = LED_COMMS
 
