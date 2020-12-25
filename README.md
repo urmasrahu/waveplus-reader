@@ -1,8 +1,7 @@
 # Airthings Wave Plus Sensor Reader
 
 This is a project to provide users an interface (```read_waveplus.py```) to read current sensor values from the
-[Airthings Wave Plus](https://airthings.com/wave-plus/) devices using a Raspberry Pi 3 
-Model B over Bluetooth Low Energy (BLE).
+[Airthings Wave Plus](https://airthings.com/wave-plus/) devices using a Raspberry Pi over Bluetooth Low Energy (BLE).
 
 Airthings Wave Plus is a smart IAQ monitor with Radon detection, including sensors for
 temperature, air pressure, humidity, TVOCs and CO2.
@@ -29,24 +28,23 @@ The following tables shows a compact overview of dependencies for this project.
 
 | OS | Device/model/version | Comments |
 |-------------|-------------|-------------|
-| Raspbian | Raspberry Pi 3 Model B | Used in this project.
+| Raspbian | Raspberry Pi | Used in this project.
 | Linux    | x86 Debian             | Should work according to [bluepy](https://github.com/IanHarvey/bluepy)
 
 **List of linux/raspberry dependencies**
 
 | package | version | Comments |
 |-------------|-------------|-------------|
-| python         | 2.7 | Tested with python 2.7.13
-| python-pip     |     | pip for python2.7
+| python         | 3.7 | Tested with python 3.7.3
+| python-pip     |     | pip for python 3.7
 | git            |     | To download this project
-| libglib2.0-dev |     | For bluepy module
 
 **List of Python dependencies**
 
 | module | version | Comments |
 |-------------|-------------|-------------|
-| bluepy      | 1.2.0 | Newer versions have not been tested.
-| tableprint  | 0.8.0 | Newer versions have not been tested.
+| bluepy      | 1.3.0 | Newer versions have not been tested.
+| tableprint  | 0.9.1 | Newer versions have not been tested.
 
 ## Setup Raspberry Pi
 
@@ -84,12 +82,10 @@ to the Raspberry Pi terminal window. Look for ```Powered: yes```.
 
 > **Note:** The ```read_waveplus.py``` script is only compatible with Python2.7.
 
-The next step is to install the bluepy Python library for talking to the BLE stack. 
-For the current released version for Python 2.7:
+The next step is to install the bluepy Python library for talking to the BLE stack:
 
 ```
-pi@raspberrypi:~$ sudo apt-get install python-pip libglib2.0-dev
-pi@raspberrypi:~$ sudo pip2 install bluepy==1.2.0
+pi@raspberrypi:~$ sudo pip3 install bluepy
 ```
 
 Make sure your Raspberry Pi has git installed
@@ -108,10 +104,10 @@ Additionally, the ```read_waveplus.py``` script depends on the ```tableprint``` 
 to print nicely formated sensor data to the Raspberry Pi terminal at run-time.
 
 ```
-pi@raspberrypi:~$ sudo pip2 install tableprint==0.8.0
+pi@raspberrypi:~$ sudo pip3 install tableprint
 ```
 
-> **Note:** The ```read_waveplus.py``` script has been tested with bluepy==1.2.0 and tableprint==0.8.0. You may download the latest versions at your own risk.
+> **Note:** The ```read_waveplus.py``` script has been tested with bluepy==1.3.0 and tableprint==0.9.1. You may download the latest versions at your own risk.
 
 ## Downloading script
 
@@ -141,7 +137,7 @@ your phone while using this script.
 The general format for calling the ```read_waveplus.py``` script is as follows:
 
 ```
-read_waveplus.py SN SAMPLE-PERIOD [pipe > yourfilename.txt]
+sudo python3 read_waveplus.py SN SAMPLE-PERIOD [pipe > yourfilename.txt]
 ```
 
 where the input arguments are:
@@ -162,7 +158,7 @@ By default, the ```read_waveplus.py``` script will print the current sensor valu
 Run the Python script in the following way:
 
 ```
-pi@raspberrypi:~/waveplus-reader $ sudo python2 read_waveplus.py SN SAMPLE-PERIOD
+pi@raspberrypi:~/waveplus-reader $ sudo python3 read_waveplus.py SN SAMPLE-PERIOD
 ```
 
 where you change ```SN``` with the 10-digit serial number, and change ```SAMPLE-PERIOD``` to a numerical value of your choice.
@@ -175,12 +171,21 @@ Raspberry Pi terminal window. Exit the script using ```Ctrl+C```.
 If you want to pipe the results to a text-file, you can run the script in the following way:
 
 ```
-pi@raspberrypi:~/waveplus-reader $ sudo python2 read_waveplus.py SN SAMPLE-PERIOD pipe > yourfilename.txt
+pi@raspberrypi:~/waveplus-reader $ sudo python3 read_waveplus.py SN SAMPLE-PERIOD pipe > yourfilename.txt
 ```
 
 where you change ```SN``` with the 10-digit serial number, and change ```SAMPLE-PERIOD``` to a numerical value of your choice.
 
 Exit the script using ```Ctrl+C```.
+
+## Optional: showing air quality status with Pimironi Blinkt! LED strip
+
+In case you have the Pimironi Blinkt! LED accessory connected to your Raspberry Pi, the script can show air quality status
+with the LEDs. For this, you need to download and install the script from (https://github.com/urmasrahu/multi_blinkt) (see the readme file there for instructions), then run the read_waveplus.py script with "blinky" as the 4th parameter (the 3rd parameter should be "terminal"):
+
+```
+pi@raspberrypi:~/waveplus-reader $ sudo python3 read_waveplus.py SN SAMPLE-PERIOD terminal blinky
+```
 
 # Sensor data description
 
@@ -204,8 +209,6 @@ sudo apt-get install python-matplotlib
 ```
 Ref: (https://askubuntu.com/questions/1046554/python-matplotlib-importerror-no-module-named-functools-lru-cache)
 
-In case the script fails to connect to the Bluetooth device, you may need to run the script as superuser (using the sudo command).
-
 
 
 # Contribution
@@ -215,6 +218,10 @@ Let us know how it went! If you want contribute, you can do so by posting issues
 [here](https://github.com/Airthings/waveplus-reader/pulls).
 
 # Release notes
+
+Release dated 24-Dec-2020
+
+* Ported to run under Python 3, added support for coloured output and showing status with Pimironi Blinkt! LEDs.
 
 Release dated 14-Jan-2019
 
