@@ -114,13 +114,19 @@ pi@raspberrypi:~$ sudo pip3 install tableprint
 Downloading using git:
 
 ```
-pi@raspberrypi:~$ sudo git clone https://github.com/Airthings/waveplus-reader.git
+pi@raspberrypi:~$ git clone https://github.com/Airthings/waveplus-reader.git
 ```
 
 Downloading using wget:
 
 ```
 pi@raspberrypi:~$ wget https://raw.githubusercontent.com/Airthings/waveplus-reader/master/read_waveplus.py
+```
+
+// The above is for the original repo, for this fork here, use below clone command:
+
+```
+git clone git@github.com:urmasrahu/waveplus-reader.git
 ```
 
 # Usage
